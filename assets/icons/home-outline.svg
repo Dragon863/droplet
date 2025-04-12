@@ -1,0 +1,16 @@
+<svg width="205" height="211" viewBox="0 0 205 211" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Home Icon" clip-path="url(#clip0_18_72)">
+<path id="Outline" d="M128.589 19.3753L177.458 56.9461C191.519 67.7559 197.388 86.1604 192.182 103.115L172.4 167.541C166.92 185.385 150.439 197.566 131.772 197.566H73.5989C54.9321 197.566 38.4504 185.385 32.9711 167.541L13.1885 103.115C7.98256 86.1604 13.8521 67.7559 27.9126 56.9461L76.7816 19.3753C92.0548 7.63316 113.316 7.63316 128.589 19.3753Z" stroke="black" stroke-width="15"/>
+<g id="Door">
+<mask id="path-2-inside-1_18_72" fill="white">
+<rect x="86.8132" y="128.803" width="31.7443" height="61.6212" rx="15"/>
+</mask>
+<rect x="86.8132" y="128.803" width="31.7443" height="61.6212" rx="15" stroke="black" stroke-width="31.7443" mask="url(#path-2-inside-1_18_72)"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_18_72">
+<rect width="205" height="211" fill="white"/>
+</clipPath>
+</defs>
+</svg>

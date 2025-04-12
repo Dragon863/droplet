@@ -1,0 +1,41 @@
+name: droplet
+description: "Simple social, for your circle."
+
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1-beta
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  google_fonts: ^6.2.1
+  shared_preferences: ^2.5.2
+  flutter_svg: ^2.0.17
+  provider: ^6.1.2
+  gradient_widgets_plus: ^1.0.0
+  skeletonizer: ^1.4.3
+  atproto: ^0.13.3
+  appwrite: ^15.0.0
+  onesignal_flutter: ^5.3.0
+  dropdown_button2: ^2.3.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/
+    - assets/icons/
