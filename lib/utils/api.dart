@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:appwrite/models.dart';
 import 'package:droplet/utils/log.dart';
+import 'package:droplet/utils/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:appwrite/appwrite.dart';
@@ -19,8 +20,8 @@ class API extends ChangeNotifier {
   final Client _client = Client();
   String? _jwt;
   late Account _account;
-  late Map cachedPfpVersions;
-  late Map cachedNames;
+  Map cachedNames = {};
+  Map cachedPfpUrls = {};
 
   User get currentUser => _currentUser;
   AccountStatus get status => _status;
@@ -60,31 +61,19 @@ class API extends ChangeNotifier {
 
   Future<String> getJwt() async {
     if (_jwt == null) {
-      // Normal on first API call after cold start
       _jwt = await _account.createJWT().then((Jwt jwt) => jwt.jwt);
       debugLog("JWT is null, creating new one");
-      debugLog("New JWT: $_jwt");
       return _jwt!;
     }
-    // Split the JWT into its three parts - header, payload, signature
-    final String splitToken = _jwt!.split(".")[1]; // Payload
-
+    final String splitToken = _jwt!.split(".")[1];
     final maybeValidJwt = getJsonFromJWT(splitToken);
 
     if ((jsonDecode(maybeValidJwt)["exp"] * 1000) <
         DateTime.now().millisecondsSinceEpoch) {
-      // Appwrite uses seconds, not milliseconds, since epoch
-
-      // JWT is expired
       debugLog("JWT is expired, creating new one");
-      debugLog(
-        "Original expired at ${jsonDecode(maybeValidJwt)["exp"] * 1000}, now is ${DateTime.now().millisecondsSinceEpoch}",
-      );
       _jwt = await _account.createJWT().then((Jwt jwt) => jwt.jwt);
-      debugLog("New JWT: $_jwt");
       return _jwt!;
     } else {
-      // JWT is still valid
       debugLog("JWT is still valid");
       return _jwt!;
     }
@@ -108,47 +97,6 @@ class API extends ChangeNotifier {
     return _currentUser;
   }
 
-  Future<void> cachePfpVersions() async {
-    final String jwtToken = await getJwt();
-    final friends = await getFriends();
-
-    List<String> userIds = [];
-    for (var friend in friends) {
-      userIds.add(friend["userid"]);
-    }
-
-    final response = await http.post(
-      Uri.parse('${DropletConfig.apiUrl}/api/cache/get/pfp-versions'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'user_ids': userIds}),
-    );
-    cachedPfpVersions = jsonDecode(response.body);
-  }
-
-  Future<void> cacheNames() async {
-    final String jwtToken = await getJwt();
-    final friends = await getFriends();
-
-    List<String> userIds = [];
-    for (var friend in friends) {
-      userIds.add(friend["userid"]);
-    }
-
-    final response = await http.post(
-      Uri.parse('${DropletConfig.apiUrl}/api/name/get/batch'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'user_ids': userIds}),
-    );
-
-    cachedNames = jsonDecode(response.body);
-  }
-
   Future<void> createEmailSession({
     required String email,
     required String password,
@@ -157,27 +105,6 @@ class API extends ChangeNotifier {
     _currentUser = await Account(_client).get();
     OneSignal.login(_currentUser.$id);
     _status = AccountStatus.authenticated;
-    await cachePfpVersions();
-    await cacheNames();
-  }
-
-  String getPfpUrl(String userId) {
-    if (cachedPfpVersions.containsKey(userId)) {
-      return "https://appwrite.danieldb.uk/v1/storage/buckets/${DropletConfig.profileBucketId}/files/$userId/view?project=${DropletConfig.appwriteProjectId}&version=${cachedPfpVersions[userId]}";
-    }
-    return "https://appwrite.danieldb.uk/v1/storage/buckets/${DropletConfig.profileBucketId}/files/$userId/view?project=${DropletConfig.appwriteProjectId}&version=0";
-  }
-
-  Future<void> incrementPfpVersion() async {
-    final String jwtToken = await getJwt();
-    final response = await http.post(
-      Uri.parse('${DropletConfig.apiUrl}/api/cache/update/pfp-version'),
-      headers: {'Authorization': 'Bearer $jwtToken'},
-    );
-    if (response.statusCode != 200) {
-      throw "Error incrementing pfp version";
-    }
-    await cachePfpVersions();
   }
 
   Future<void> signOut() async {
@@ -196,112 +123,336 @@ class API extends ChangeNotifier {
 
   String humanResponse(String body) {
     final jsonBody = jsonDecode(body);
-    if (jsonBody["error"] != null) {
-      return jsonBody["error"];
+    if (jsonBody["detail"] != null) {
+      // FastAPI errors use "detail". idk if this is a good idea!
+      if (jsonBody["detail"] is String) {
+        return jsonBody["detail"];
+      } else if (jsonBody["detail"] is List && jsonBody["detail"].isNotEmpty) {
+        return jsonBody["detail"][0]["msg"] ?? "Invalid input";
+      }
     } else if (jsonBody["message"] != null) {
       return jsonBody["message"];
-    } else {
-      // Shouldn't happen
-      return "Operation complete";
     }
+    return "Operation complete";
   }
 
-  Future<String> sendFriendRequest(String userId) async {
-    final String jwtToken = await getJwt();
-
-    final response = await http.post(
-      Uri.parse('${DropletConfig.apiUrl}/api/friend-requests'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'receiver_id': userId}),
-    );
-    return humanResponse(response.body);
+  bool isSuccessResponse(int statusCode) {
+    return statusCode >= 200 && statusCode < 300;
   }
 
-  Future<void> blockUser(String userId) async {
-    final String jwtToken = await getJwt();
-    final response = await http.post(
-      Uri.parse('${DropletConfig.apiUrl}/api/block'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'blocked_id': userId}),
-    );
-    if (response.statusCode != 201) {
-      throw "Error blocking user";
+  Future<String?> getName(String userId, {bool changeForYou = true}) async {
+    if (changeForYou && userId == userid) {
+      return "You";
     }
-    return;
-  }
-
-  Future<bool> respondToFriendRequest(
-    String userId,
-    bool accept,
-    int id,
-  ) async {
-    final String jwtToken = await getJwt();
-    final response = await http.put(
-      Uri.parse('${DropletConfig.apiUrl}/api/friend-requests/${id.toString()}'),
-      headers: {
-        'Authorization': 'Bearer $jwtToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'action': accept ? 'accept' : 'decline'}),
-    );
-    return response.statusCode == 200;
-  }
-
-  Future<List> getFriends() async {
-    final String jwtToken = await getJwt();
-    List<Map> friends = [];
-
-    final response = await http.get(
-      Uri.parse('${DropletConfig.apiUrl}/api/friends'),
-      headers: {'Authorization': 'Bearer $jwtToken'},
-    );
-    for (final friend in jsonDecode(response.body)) {
-      if (friend["receiver_id"] == user!.$id) {
-        friends.add({
-          "userid": friend["sender_id"],
-          "status": friend["status"],
-          "id": friend["id"],
-          "created_at": friend["created_at"],
-          "updated_at": friend["updated_at"],
-        });
-      } else {
-        friends.add({
-          "userid": friend["receiver_id"],
-          "status": friend["status"],
-          "id": friend["id"],
-          "created_at": friend["created_at"],
-          "updated_at": friend["updated_at"],
-        });
-      }
-    }
-    return friends;
-  }
-
-  Future<List> getFriendRequests() async {
-    final String jwtToken = await getJwt();
-    final response = await http.get(
-      Uri.parse('${DropletConfig.apiUrl}/api/friend-requests?status=pending'),
-      headers: {'Authorization': 'Bearer $jwtToken'},
-    );
-    return jsonDecode(response.body);
-  }
-
-  Future<String> getName(String userId) async {
     if (cachedNames.containsKey(userId)) {
       return cachedNames[userId].toString();
     }
     final String jwtToken = await getJwt();
     final response = await http.get(
-      Uri.parse('${DropletConfig.apiUrl}/api/name/get/$userId'),
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/name/$userId'),
       headers: {'Authorization': 'Bearer $jwtToken'},
     );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting name: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    cachedNames[userId] = jsonDecode(response.body)["name"];
     return jsonDecode(response.body)["name"];
+  }
+
+  Future<String> setName(String name) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/name?name=$name'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error setting name: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    cachedNames[userid!] = name;
+    loadUser();
+    return humanResponse(response.body);
+  }
+
+  Future<String?> getPfpUrl(String userId) async {
+    if (cachedPfpUrls.containsKey(userId)) {
+      return cachedPfpUrls[userId].toString();
+    }
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/pfp/$userId'),
+      headers: {'Authorization': 'Bearer $jwtToken'},
+    );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting pfp: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    cachedPfpUrls[userId] = jsonDecode(response.body);
+    return jsonDecode(response.body);
+  }
+
+  Future<Bubble> createBubble(String name) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/bubbles'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'name': name}),
+    );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error creating bubble: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    return Bubble.fromJson(jsonDecode(response.body));
+  }
+
+  Future<List<Bubble>> getBubbles() async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/bubbles'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting bubbles: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    final List<Bubble> bubbles = [];
+    final List<dynamic> jsonBody = jsonDecode(response.body);
+    for (var bubble in jsonBody) {
+      bubbles.add(Bubble.fromJson(bubble));
+    }
+    return bubbles;
+  }
+
+  Future<String> leaveBubble(String bubbleId) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/leave"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error leaving bubble: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    return humanResponse(response.body);
+  }
+
+  // deprecated: now I'm using joinBubbleWithCode instead!
+  // Future<bool> joinBubble(String bubbleId) async {
+  //   final String jwtToken = await getJwt();
+  //   final response = await http.post( // Changed to POST
+  //     Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/join"),
+  //     headers: {
+  //       'Authorization': 'Bearer $jwtToken',
+  //       'Content-Type': 'application/json',
+  //     },
+  //   );
+
+  //   if (!isSuccessResponse(response.statusCode)) {
+  //     debugLog("Error joining bubble by ID: ${response.body}");
+  //     throw humanResponse(response.body);
+  //   }
+  //   return true;
+  // }
+
+  Future<Map<String, String>> generateInviteCode(String bubbleId) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/invite-code"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error generating invite code: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    final Map<String, dynamic> jsonBody = jsonDecode(response.body);
+    return {
+      'invite_code': jsonBody['invite_code'].toString(),
+      'expires_at': jsonBody['expires_at'].toString(),
+    };
+  }
+
+  Future<String> joinBubbleWithCode(String inviteCode) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/join/$inviteCode"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error joining bubble with code: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    return humanResponse(response.body);
+  }
+
+  Future<bool> submitBubbleAnswer(String bubbleId, String answer) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse(
+        "${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/answer?answer=${Uri.encodeComponent(answer)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error submitting answer: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    return true;
+  }
+
+  Future<List<BubbleAnswer>> getBubbleAnswers(String bubbleId) async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/answers"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting answers: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    final List<BubbleAnswer> answers = [];
+    final List<dynamic> jsonBody = jsonDecode(response.body);
+    for (var answer in jsonBody) {
+      answers.add(BubbleAnswer.fromJson(answer));
+    }
+    return answers;
+  }
+
+  Future<Prompt> getTodaysPrompt(String bubbleId) async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/prompt"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting prompt: ${response.body}");
+      throw humanResponse(response.body);
+    }
+
+    final Map<String, dynamic> jsonBody = jsonDecode(response.body);
+    return Prompt.fromJson(jsonBody);
+  }
+
+  Future<bool> setTodaysPrompt(String bubbleId, String prompt) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse(
+        "${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/prompt?prompt=${Uri.encodeComponent(prompt)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error setting prompt: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    return true;
+  }
+
+  Future<void> pfpUpdated(String url) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse(
+        "${DropletConfig.apiUrl}/api/v1/user/pfp?pfp_url=${Uri.encodeComponent(url)}",
+      ),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error updating pfp: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    if (url.toLowerCase() != "none") {
+      cachedPfpUrls[userid!] = url;
+    } else {
+      cachedPfpUrls.remove(userid!); // Remove if set to none
+    }
+    notifyListeners(); // Notify listeners after cache update
+  }
+
+  Future<PromptAssignment> getTodaysPromptAssignment(String bubbleId) async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse(
+        "${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/prompt-assignment",
+      ),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting prompt assignment: ${response.body}");
+      throw humanResponse(response.body);
+    }
+
+    final Map<String, dynamic> jsonBody = jsonDecode(response.body);
+    return PromptAssignment.fromJson(jsonBody);
+  }
+
+  Future<List<DropletUser>> getBubbleMembers(String bubbleId) async {
+    final String jwtToken = await getJwt();
+
+    final response = await http.get(
+      Uri.parse("${DropletConfig.apiUrl}/api/v1/bubbles/$bubbleId/members"),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting bubble members: ${response.body}");
+      throw humanResponse(response.body);
+    }
+
+    final List<DropletUser> members = [];
+    final List<dynamic> jsonBody = jsonDecode(response.body);
+    for (var member in jsonBody) {
+      members.add(DropletUser.fromJson(member));
+    }
+    return members;
   }
 
   User? get user => _currentUser;

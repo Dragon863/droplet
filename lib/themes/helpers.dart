@@ -105,13 +105,24 @@ class DropletAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class PageTopBar extends StatelessWidget {
   final String title;
+  final Widget? leading;
   final Widget? trailing;
-  const PageTopBar({super.key, required this.title, this.trailing});
+
+  const PageTopBar({
+    super.key,
+    required this.title,
+    this.leading,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        if (leading != null) leading! else const SizedBox(width: 0),
+        if (leading != null) const HorizontalSpacer(width: 8),
         Text(
           title,
           style: GoogleFonts.gantari(
@@ -145,4 +156,11 @@ class HorizontalSpacer extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(width: width);
   }
+}
+
+ImageProvider<Object>? networkImgFactory(String? url) {
+  if (url == null || url.isEmpty) {
+    return null;
+  }
+  return NetworkImage(url);
 }

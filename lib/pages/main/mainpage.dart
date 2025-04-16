@@ -1,3 +1,5 @@
+import 'package:droplet/pages/activity/activity.dart';
+import 'package:droplet/pages/bubbles/page/bubbles.dart';
 import 'package:droplet/pages/home/home.dart';
 import 'package:droplet/pages/settings/settings.dart';
 import 'package:droplet/themes/helpers.dart';
@@ -17,8 +19,8 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = <Widget>[
     const HomePage(),
-    const Text('Activity'),
-    const Text('Friends'),
+    const ActivityPage(),
+    const BubblesPage(),
     const SettingsPage(),
   ];
 
@@ -34,7 +36,7 @@ class _MainPageState extends State<MainPage> {
     final bool isActive = _currentPage == index;
     int size = 32;
     final String path =
-        'assets/icons/${['home', 'activity', 'friends', 'settings'][index]}${isActive ? '' : '-outline'}.svg';
+        'assets/icons/${['home', 'activity', 'bubbles', 'settings'][index]}${isActive ? '' : '-outline'}.svg';
 
     return
     // Scale up then down to fix aliasing issues
@@ -138,7 +140,7 @@ class _MainPageState extends State<MainPage> {
               children: [
                 Expanded(child: _buildNavItem(0, 'Home')),
                 Expanded(child: _buildNavItem(1, 'Activity')),
-                Expanded(child: _buildNavItem(2, 'Friends')),
+                Expanded(child: _buildNavItem(2, 'Bubbles')),
                 Expanded(child: _buildNavItem(3, 'Settings')),
               ],
             ),

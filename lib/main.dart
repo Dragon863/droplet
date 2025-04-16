@@ -3,10 +3,16 @@ import 'package:droplet/pages/main/mainpage.dart';
 import 'package:droplet/pages/splash/splash.dart';
 import 'package:droplet/themes/theme_provider.dart';
 import 'package:droplet/utils/api.dart';
+import 'package:droplet/utils/config.dart';
 import 'package:flutter/material.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  OneSignal.initialize(DropletConfig.onesignalAppId);
+  OneSignal.Notifications.requestPermission(true);
+
   runApp(
     ChangeNotifierProvider(create: ((context) => API()), child: const MyApp()),
   );

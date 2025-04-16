@@ -2,12 +2,12 @@ import 'package:droplet/themes/helpers.dart';
 import 'package:flutter/material.dart';
 
 class ResponseCard extends StatelessWidget {
-  final String pfpUrl;
+  final String? pfpUrl;
   final String name;
   final String response;
   const ResponseCard({
     super.key,
-    required this.pfpUrl,
+    this.pfpUrl,
     required this.name,
     required this.response,
   });
@@ -30,11 +30,12 @@ class ResponseCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(pfpUrl),
-                      radius: 12,
-                    ),
-                    HorizontalSpacer(width: 6),
+                    if (pfpUrl != null)
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(pfpUrl!),
+                        radius: 12,
+                      ),
+                    if (pfpUrl != null) HorizontalSpacer(width: 6),
                     Text(
                       name,
                       style: TextStyle(

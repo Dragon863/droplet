@@ -1,9 +1,12 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:droplet/pages/home/components/prompt_card.dart';
-import 'package:droplet/pages/home/components/response_card.dart';
+import 'package:droplet/pages/home/bubbleview.dart';
 import 'package:droplet/themes/helpers.dart';
 import 'package:droplet/utils/api.dart';
+import 'package:droplet/utils/models.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,6 +16,72 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Widget> content = [];
+  bool skeleton = true;
+  Map dropdownValues = {
+    "Placehldr": "0000",
+    "Placeholder2": "1111",
+    "Placeholdrr": "2222",
+  };
+  bool dropdownEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load content after the first frame is rendered to prevent context and theme issues
+      _loadContent();
+    });
+  }
+
+  Future<void> _loadContent() async {
+    setState(() {
+      content = [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+        Center(
+          child: SizedBox(
+            height: 48,
+            width: 48,
+            child: CircularProgressIndicator(
+              strokeWidth: 8,
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+        ),
+      ];
+    });
+    final API api = context.read<API>();
+    final List<Bubble> bubbles = await api.getBubbles();
+    dropdownValues = {};
+    for (var bubble in bubbles) {
+      dropdownValues[bubble.name] = bubble.id;
+    }
+    if (bubbles.isNotEmpty) {
+      content = await renderBubble(bubbles[0].id, context, () async {
+        await _loadContent();
+      });
+    } else {
+      content = [
+        Column(
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+            Image.asset('assets/nobubbles.png', height: 120, width: 120),
+            Text(
+              'Join a bubble below!',
+              style: GoogleFonts.ibmPlexMono(fontSize: 14),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ];
+      dropdownEnabled = false;
+    }
+
+    setState(() {
+      skeleton = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,98 +95,75 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.only(top: 8, left: 8),
                 child: PageTopBar(
                   title: 'Home',
-                  trailing: Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton2(
-                        customButton: Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 32,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        buttonStyleData: ButtonStyleData(
-                          overlayColor: WidgetStatePropertyAll(
-                            Colors.transparent,
+                  trailing: Visibility(
+                    visible: dropdownEnabled,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton2(
+                          customButton: Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                        ),
-                        dropdownStyleData: DropdownStyleData(
-                          width: 160,
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                            color: Theme.of(context).colorScheme.surface,
+                          buttonStyleData: ButtonStyleData(
+                            overlayColor: WidgetStatePropertyAll(
+                              Colors.transparent,
+                            ),
                           ),
+                          dropdownStyleData: DropdownStyleData(
+                            width: 160,
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              color: Theme.of(context).colorScheme.surface,
+                            ),
+                          ),
+                          items:
+                              dropdownValues.entries
+                                  .map(
+                                    (entry) => DropdownMenuItem<String>(
+                                      value: entry.value,
+                                      onTap: () async {
+                                        setState(() {
+                                          skeleton = true;
+                                        });
+                                        content = [];
+                                        content = await renderBubble(
+                                          entry.value,
+                                          context,
+                                          () async {
+                                            await _loadContent();
+                                            setState(() {});
+                                          },
+                                        );
+                                        setState(() {
+                                          skeleton = false;
+                                        });
+                                      },
+                                      child: Skeletonizer(
+                                        enabled: skeleton,
+                                        child: Text(
+                                          entry.key,
+                                          style: TextStyle(
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (value) {},
                         ),
-                        items: [
-                          DropdownMenuItem(value: '1', child: Text('Item 1')),
-                          DropdownMenuItem(value: '2', child: Text('Item 2')),
-                          DropdownMenuItem(value: '3', child: Text('Item 3')),
-                        ],
-                        onChanged: (value) {
-                          // Handle dropdown item selection
-                        },
                       ),
                     ),
                   ),
                 ),
               ),
-              VerticalSpacer(height: 12),
-              Padding(
-                padding: const EdgeInsets.only(left: 8, right: 8),
-                child: PromptCard(
-                  text:
-                      '"Lorem Ipsum Dolor Sit Amet Consectetur Adipiscing Elit Sed"',
-                ),
-              ),
-              VerticalSpacer(height: 12),
-              Padding(
-                padding: const EdgeInsets.only(left: 8, right: 8),
-                child: FloatingActionButton(
-                  onPressed: () {},
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Text('Submit Answer'),
-                ),
-              ),
-              VerticalSpacer(height: 24),
-              Padding(
-                padding: const EdgeInsets.only(left: 18.0, right: 18.0),
-                child: Divider(
-                  color: Theme.of(context).colorScheme.onTertiaryContainer,
-                ),
-              ),
-              VerticalSpacer(height: 24),
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: BouncingScrollPhysics(),
-                  child: Row(
-                    children: [
-                      ResponseCard(
-                        pfpUrl:
-                            "https://lh3.googleusercontent.com/a/ACg8ocIUbyZuM0hwf9Ks5XCqmqnBYTM1QkKMYE_sPUjIjkDPJTw60Q=s83-c-mo",
-                        name: "Dohn Joe",
-                        response:
-                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed etiam, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                      ),
-                      ResponseCard(
-                        pfpUrl:
-                            "https://static.independent.co.uk/2024/09/06/11/MixCollage-06-Sep-2024-11-08-AM-5516.jpg?width=120",
-                        name: "Jack Black",
-                        response:
-                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed etiam, sed do eiusmod tempor ",
-                      ),
-                      ResponseCard(
-                        pfpUrl:
-                            "https://static.independent.co.uk/2024/09/06/11/MixCollage-06-Sep-2024-11-08-AM-5516.jpg?width=120",
-                        name: "John Pork",
-                        response:
-                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed etiam, sed do eiusmod tempor ",
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              ...content,
             ],
           ),
         ),
