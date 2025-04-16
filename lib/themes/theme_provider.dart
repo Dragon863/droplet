@@ -2,6 +2,7 @@ import 'package:droplet/themes/dark.dart';
 import 'package:droplet/themes/light.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider with ChangeNotifier {
   late ThemeMode _themeMode = ThemeMode.system;
@@ -9,16 +10,46 @@ class ThemeProvider with ChangeNotifier {
   late ColorScheme _lightScheme = lightColourScheme;
 
   ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode =>
+      _themeMode == ThemeMode.dark ||
+      (_themeMode == ThemeMode.system &&
+          WidgetsBinding.instance.window.platformBrightness == Brightness.dark);
+  bool get isLightMode =>
+      _themeMode == ThemeMode.light ||
+      (_themeMode == ThemeMode.system &&
+          WidgetsBinding.instance.window.platformBrightness ==
+              Brightness.light);
 
-  void setThemeMode(ThemeMode value) {
+  Future<void> initTheme() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? theme = prefs.getString('theme');
+    if (theme == null) {
+      _themeMode = ThemeMode.light;
+    } else if (theme == 'dark') {
+      _themeMode = ThemeMode.dark;
+    } else if (theme == 'light') {
+      _themeMode = ThemeMode.light;
+    } else {
+      _themeMode = ThemeMode.system;
+    }
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode value) async {
     _themeMode = value;
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness:
-            value == ThemeMode.light ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: Brightness.light,
       ),
     );
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (value == ThemeMode.system) {
+      prefs.remove('theme');
+    } else {
+      prefs.setString('theme', value.toString().split('.').last);
+    }
+
     notifyListeners();
   }
 

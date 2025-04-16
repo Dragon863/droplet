@@ -65,9 +65,9 @@ class _HomePageState extends State<HomePage> {
         Column(
           children: [
             SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-            Image.asset('assets/nobubbles.png', height: 120, width: 120),
+            Image.asset('assets/nocontenthome.png', height: 120, width: 120),
             Text(
-              'Join a bubble below!',
+              'Join a bubble in the bubbles tab!',
               style: GoogleFonts.ibmPlexMono(fontSize: 14),
             ),
             const SizedBox(height: 32),

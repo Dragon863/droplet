@@ -57,7 +57,7 @@ class _BubbleCardState extends State<BubbleCard> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () async {
-          final bool shouldRefresh = await Navigator.of(context).push(
+          final bool? shouldRefresh = await Navigator.of(context).push(
             MaterialPageRoute(
               builder:
                   (context) => ManageBubblePage(
@@ -67,7 +67,7 @@ class _BubbleCardState extends State<BubbleCard> {
                   ),
             ),
           );
-          if (shouldRefresh) {
+          if (shouldRefresh == true) {
             widget.onRefresh();
           }
         },
@@ -100,7 +100,7 @@ class _BubbleCardState extends State<BubbleCard> {
                           enabled: loading,
                           child: Text(
                             "$numberOfMembersText ${numberOfMembersText == '1' ? 'member' : 'members'}, created $createdAgoText ago",
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurface.withValues(alpha: 0.6),

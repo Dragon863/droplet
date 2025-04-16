@@ -16,44 +16,41 @@ class ResponseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 200,
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: Card(
-          shadowColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.4),
-          color: Theme.of(context).colorScheme.surface,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (pfpUrl != null)
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(pfpUrl!),
-                        radius: 12,
-                      ),
-                    if (pfpUrl != null) HorizontalSpacer(width: 6),
-                    Text(
-                      name,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      ),
+      child: Card(
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withValues(alpha: 0.4),
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (pfpUrl != null)
+                    CircleAvatar(
+                      backgroundImage: NetworkImage(pfpUrl!),
+                      radius: 12,
                     ),
-                  ],
-                ),
-                VerticalSpacer(height: 8),
-                Text(
-                  response,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
+                  if (pfpUrl != null) HorizontalSpacer(width: 6),
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                ],
+              ),
+              VerticalSpacer(height: 8),
+              Text(
+                response,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

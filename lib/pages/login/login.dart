@@ -1,4 +1,5 @@
 import 'package:droplet/utils/api.dart';
+import 'package:droplet/utils/snackbars.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -82,17 +83,20 @@ class _LoginPageState extends State<LoginPage> {
               controller: _emailController,
               decoration: InputDecoration(
                 label: const Text('Email'),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                ),
                 errorText: _isemailValid ? null : 'Email is invalid',
                 errorBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.red),
+                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
                 ),
                 errorStyle: const TextStyle(color: Colors.red),
                 errorMaxLines: 1,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: TextField(
@@ -104,10 +108,13 @@ class _LoginPageState extends State<LoginPage> {
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 label: const Text('Password'),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                ),
                 errorText: _isPasswordValid ? null : 'Password is too short',
                 errorBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.red),
+                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
                 ),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -136,11 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                   checkPasswordValidity(_passwordController.text);
                   if (!_isemailValid || !_isPasswordValid) {
                     setState(() => _isLoading = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invalid email or password'),
-                      ),
-                    );
+                    context.showErrorSnackbar('Invalid email or password');
                     return;
                   }
 
@@ -155,10 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                         Navigator.pushReplacementNamed(context, '/main');
                       })
                       .catchError((error) {
-                        // Handle login error here
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Login failed: $error')),
-                        );
+                        context.showErrorSnackbar('Login failed: $error');
                       });
 
                   setState(() => _isLoading = false);
@@ -175,11 +175,7 @@ class _LoginPageState extends State<LoginPage> {
                   checkPasswordValidity(_passwordController.text);
                   if (!_isemailValid || !_isPasswordValid) {
                     setState(() => _isLoading = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invalid email or password'),
-                      ),
-                    );
+                    context.showErrorSnackbar('Invalid email or password');
                     return;
                   }
 
@@ -190,14 +186,10 @@ class _LoginPageState extends State<LoginPage> {
                         password: _passwordController.text,
                       )
                       .then((_) {
-                        // Handle successful login here
-                        Navigator.pushReplacementNamed(context, '/main');
+                        Navigator.pushReplacementNamed(context, '/');
                       })
                       .catchError((error) {
-                        // Handle login error here
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Login failed: $error')),
-                        );
+                        context.showErrorSnackbar('Login failed: $error');
                       });
 
                   setState(() => _isLoading = false);
@@ -207,14 +199,14 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           const Spacer(),
-          TextButton(
-            child: Text(
-              'Forgot Password?',
-              style: TextStyle(color: Color(0xFF9B51E0)),
-            ),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 24),
+          // TextButton(
+          //   child: Text(
+          //     'Forgot Password?',
+          //     style: TextStyle(color: Color(0xFF9B51E0)),
+          //   ),
+          //   onPressed: () {},
+          // ),
+          // const SizedBox(height: 24),
         ],
       ),
     );

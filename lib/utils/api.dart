@@ -455,6 +455,57 @@ class API extends ChangeNotifier {
     return members;
   }
 
+  Future<List<FeedItem>> getUserFeed() async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/feed'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting user feed: ${response.body}");
+      throw humanResponse(response.body);
+    }
+
+    final List<FeedItem> feedItems = [];
+    final List<dynamic> jsonBody = jsonDecode(response.body);
+    for (var item in jsonBody) {
+      feedItems.add(FeedItem.fromJson(item));
+    }
+    return feedItems;
+  }
+
+  Future<void> closeAccount() async {
+    final String jwtToken = await getJwt();
+    final response = await http.delete(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/close_account'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error closing account: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    _status = AccountStatus.unauthenticated;
+    _jwt = null;
+    cachedNames.clear();
+    cachedPfpUrls.clear();
+    notifyListeners();
+    OneSignal.logout();
+  }
+
+  Future<void> onboardComplete() async {
+    final Preferences prefs = await account!.getPrefs();
+    prefs.data["onboarded"] = true;
+    await account!.updatePrefs(prefs: prefs.data);
+  }
+
   User? get user => _currentUser;
   Account? get account => _account;
 }

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:droplet/pages/password_reset/password_reset_page.dart';
 import 'package:droplet/pages/settings/crop_pfp.dart';
 import 'package:droplet/themes/helpers.dart';
 import 'package:droplet/themes/theme_provider.dart';
@@ -316,6 +317,132 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+                ListTile(
+                  leading: Icon(Icons.password),
+                  title: const Text(
+                    'Reset Password',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Icon(Icons.keyboard_arrow_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PasswordResetPage(),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.privacy_tip_outlined),
+                  title: const Text(
+                    'Privacy Policy',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Icon(Icons.keyboard_arrow_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const Placeholder(),
+                      ),
+                    );
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: const Divider(),
+                ),
+                ListTile(
+                  leading: Icon(Icons.logout),
+                  title: const Text(
+                    'Log Out',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () async {
+                    final API api = context.read<API>();
+                    final bool? result = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Log Out"),
+                          content: const Text(
+                            "Are you sure you want to log out?",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(false);
+                              },
+                              child: const Text("Cancel"),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(true);
+                              },
+                              child: const Text("Log Out"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                    if (result == true) {
+                      await api.signOut();
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil("/", (route) => false);
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.close, color: Colors.red),
+                  title: const Text(
+                    'Close Account',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  onTap: () async {
+                    final bool? confirmed = await showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Close Account"),
+                          content: const Text(
+                            "Are you sure you want to close your account? This action is IRRIVERSIBLE and will delete all your data!",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(false);
+                              },
+                              child: const Text("Cancel"),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(true);
+                              },
+                              child: const Text("Close Account"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                    final API api = context.read<API>();
+                    if (confirmed == true) {
+                      try {
+                        await api.closeAccount();
+                        context.showSuccessSnackbar(
+                          "Account closed successfully",
+                        );
+                        Navigator.of(
+                          context,
+                        ).pushNamedAndRemoveUntil("/", (route) => false);
+                      } catch (e) {
+                        context.showErrorSnackbar("Failed to close account");
+                      }
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -425,9 +552,7 @@ class _SettingsPageState extends State<SettingsPage> {
         bgImg = NetworkImage(pfpUrl ?? "");
       });
     } else if (result.runtimeType == CropFailure) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error cropping image")));
+      context.showErrorSnackbar("Error cropping image");
       return;
     } else if (result == null) {
       context.showInfoSnackbar("Cancelled");

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:droplet/pages/login/login.dart';
 import 'package:droplet/pages/main/mainpage.dart';
 import 'package:droplet/pages/nonetwork/nonetwork.dart';
+import 'package:droplet/pages/onboarding/onboarding.dart';
 import 'package:droplet/utils/api.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +52,7 @@ class _SplashPageState extends State<SplashPage> {
   Future<bool> isOnBoarded() async {
     final api = context.read<API>();
     final currentPrefs = await api.account?.getPrefs();
-    return currentPrefs?.data["onboarding_complete"] == true;
+    return currentPrefs?.data["onboarded"] == true;
   }
 
   _navigateToHome() async {
@@ -67,6 +68,12 @@ class _SplashPageState extends State<SplashPage> {
     final status = api.status;
 
     if (status == AccountStatus.authenticated) {
+      if (!await isOnBoarded()) {
+        return Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnBoardingPage()),
+          (route) => false,
+        );
+      }
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => MainPage(),

@@ -26,18 +26,22 @@ class _BubblesPageState extends State<BubblesPage> {
     if (bubbleList.isEmpty) {
       setState(() {
         bubbles.add(
-          Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Center(
-              child: Text(
-                "No bubbles yet, create or join one!",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurface,
+          Column(
+            children: [
+              SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+              Image.asset('assets/nobubbles.png', height: 120, width: 120),
+              const VerticalSpacer(height: 6),
+              Center(
+                child: Text(
+                  "Create or join a bubble below!",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.ibmPlexMono(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       });

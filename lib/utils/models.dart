@@ -147,3 +147,75 @@ class DropletUser {
     );
   }
 }
+
+// Feed item classes
+
+class FeedItemUser {
+  final String id;
+  final String? displayName;
+  final String? profilePicture;
+
+  FeedItemUser({
+    required this.id,
+    this.displayName,
+    this.profilePicture,
+  });
+
+  factory FeedItemUser.fromJson(Map<String, dynamic> json) {
+    return FeedItemUser(
+      id: json['id'],
+      displayName: json['display_name'],
+      profilePicture: json['profile_picture'],
+    );
+  }
+}
+
+class FeedItemBubble {
+  final String id;
+  final String? name;
+
+  FeedItemBubble({
+    required this.id,
+    this.name,
+  });
+
+  factory FeedItemBubble.fromJson(Map<String, dynamic> json) {
+    return FeedItemBubble(
+      id: json['id'],
+      name: json['name'],
+    );
+  }
+}
+
+class FeedItem {
+  final String type; // one of "prompt_submitted", "answer_submitted" or "user_joined"
+  final DateTime timestamp;
+  final FeedItemBubble bubble;
+  final FeedItemUser? actorUser; // who created prompt/answer
+  final FeedItemUser? targetUser; // who joined
+  final String? content; // prompt or answer text
+
+  FeedItem({
+    required this.type,
+    required this.timestamp,
+    required this.bubble,
+    this.actorUser,
+    this.targetUser,
+    this.content,
+  });
+
+  factory FeedItem.fromJson(Map<String, dynamic> json) {
+    return FeedItem(
+      type: json['type'],
+      timestamp: DateTime.parse(json['timestamp']),
+      bubble: FeedItemBubble.fromJson(json['bubble']),
+      actorUser: json['actor_user'] != null
+          ? FeedItemUser.fromJson(json['actor_user'])
+          : null,
+      targetUser: json['target_user'] != null
+          ? FeedItemUser.fromJson(json['target_user'])
+          : null,
+      content: json['content'],
+    );
+  }
+}
