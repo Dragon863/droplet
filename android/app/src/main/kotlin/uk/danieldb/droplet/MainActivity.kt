@@ -1,4 +1,4 @@
-package com.example.droplet
+package uk.danieldb.droplet
 
 import io.flutter.embedding.android.FlutterActivity
 

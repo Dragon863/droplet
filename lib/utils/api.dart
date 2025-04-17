@@ -61,8 +61,9 @@ class API extends ChangeNotifier {
 
   Future<String> getJwt() async {
     if (_jwt == null) {
-      _jwt = await _account.createJWT().then((Jwt jwt) => jwt.jwt);
       debugLog("JWT is null, creating new one");
+      _jwt = await _account.createJWT().then((Jwt jwt) => jwt.jwt);
+      debugLog("JWT: $_jwt");
       return _jwt!;
     }
     final String splitToken = _jwt!.split(".")[1];
@@ -72,6 +73,7 @@ class API extends ChangeNotifier {
         DateTime.now().millisecondsSinceEpoch) {
       debugLog("JWT is expired, creating new one");
       _jwt = await _account.createJWT().then((Jwt jwt) => jwt.jwt);
+
       return _jwt!;
     } else {
       debugLog("JWT is still valid");
@@ -504,6 +506,40 @@ class API extends ChangeNotifier {
     final Preferences prefs = await account!.getPrefs();
     prefs.data["onboarded"] = true;
     await account!.updatePrefs(prefs: prefs.data);
+  }
+
+  Future<int> getNotifHour() async {
+    final String jwtToken = await getJwt();
+    final response = await http.get(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/notification-time'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error getting notification hour: ${response.body}");
+      throw humanResponse(response.body);
+    }
+    final Map<String, dynamic> jsonBody = jsonDecode(response.body);
+    return jsonBody["hour"] ?? 10; // default to 10AM if not set
+    // Why 10AM? Because it's a nice time to get a notification! I'm not waking up at 6AM and most people aren't either.
+  }
+
+  Future<void> setNotifHour(int hour) async {
+    final String jwtToken = await getJwt();
+    final response = await http.post(
+      Uri.parse('${DropletConfig.apiUrl}/api/v1/user/notification-time'),
+      headers: {
+        'Authorization': 'Bearer $jwtToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'hour_utc': hour}),
+    );
+    if (!isSuccessResponse(response.statusCode)) {
+      debugLog("Error setting notification hour: ${response.body}");
+      throw humanResponse(response.body);
+    }
   }
 
   User? get user => _currentUser;

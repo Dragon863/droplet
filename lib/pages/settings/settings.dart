@@ -170,6 +170,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                           return AlertDialog(
                                             title: const Text("Edit name"),
                                             content: TextField(
+                                              autofocus: true,
+                                              autocorrect: false,
+                                              autofillHints: [
+                                                AutofillHints.name,
+                                              ],
+                                              textCapitalization:
+                                                  TextCapitalization.words,
                                               controller: namePopupController,
                                               decoration: const InputDecoration(
                                                 hintText: "Enter your name",
@@ -233,7 +240,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   trailing: DropdownButtonHideUnderline(
                     child: DropdownButton2<ThemeMode>(
                       value: themeProvider.themeMode,
+                      alignment: AlignmentDirectional.center,
+                      style: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.onTertiaryContainer,
+                      ),
                       dropdownStyleData: DropdownStyleData(
+                        width: 80,
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.tertiaryContainer,
@@ -243,9 +256,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       menuItemStyleData: MenuItemStyleData(height: 35),
                       buttonStyleData: ButtonStyleData(
-                        padding: const EdgeInsets.only(left: 16),
-                        height: 35,
-                        width: 100,
+                        padding: const EdgeInsets.only(right: 6, left: 8),
                         decoration: BoxDecoration(
                           color:
                               Theme.of(context).colorScheme.tertiaryContainer,
@@ -271,6 +282,112 @@ class _SettingsPageState extends State<SettingsPage> {
                           themeProvider.setThemeMode(value);
                         }
                       },
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(Icons.schedule),
+                  title: const Text(
+                    'Notification time',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: ElevatedButton(
+                    onPressed: () async {
+                      final TextEditingController hourController =
+                          TextEditingController();
+                      final int? hour = await showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text(
+                              "Set Notification Time",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            content: TextField(
+                              controller: hourController,
+                              autofocus: true,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: "Enter hour (0-23)",
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(16),
+                                  ),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                if (value.isNotEmpty) {
+                                  int.parse(value);
+                                  if (int.parse(value) < 0 ||
+                                      int.parse(value) > 23) {
+                                    context.showErrorSnackbar(
+                                      "Please enter a valid hour",
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop(null);
+                                },
+                                child: const Text("Cancel"),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  if (hourController.text.isEmpty ||
+                                      int.parse(hourController.text) < 0 ||
+                                      int.parse(hourController.text) > 23 ||
+                                      int.tryParse(hourController.text) ==
+                                          null) {
+                                    context.showErrorSnackbar(
+                                      "Please enter a valid hour",
+                                    );
+                                    return;
+                                  }
+                                  Navigator.of(
+                                    context,
+                                  ).pop(int.parse(hourController.text));
+                                },
+                                child: const Text("Set"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      if (hour != null) {
+                        final api = context.read<API>();
+                        try {
+                          await api.setNotifHour(hour);
+                          context.showSuccessSnackbar(
+                            "Notification time set to $hour:00",
+                          );
+                        } catch (e) {
+                          print(e);
+                          context.showErrorSnackbar(
+                            "Failed to set notification time: $e",
+                          );
+                        }
+                      }
+                    },
+                    style: ButtonStyle(
+                      elevation: WidgetStateProperty.all(0),
+                      backgroundColor: WidgetStateProperty.all(
+                        Theme.of(context).colorScheme.tertiaryContainer,
+                      ),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      "Set",
+                      style: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.onTertiaryContainer,
+                      ),
                     ),
                   ),
                 ),

@@ -4,6 +4,7 @@
         "*": true,
         "plaintext": false,
         "markdown": false,
-        "scminput": false
+        "scminput": false,
+        "dart": true
     }
 }
