@@ -125,6 +125,9 @@ class _HomePageState extends State<HomePage> {
                                     (entry) => DropdownMenuItem<String>(
                                       value: entry.value,
                                       onTap: () async {
+                                        if (skeleton) {
+                                          return;
+                                        }
                                         setState(() {
                                           skeleton = true;
                                         });

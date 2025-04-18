@@ -122,7 +122,8 @@ class _SplashPageState extends State<SplashPage> {
               ),
               const Spacer(),
               Text(
-                'just a second...',
+                loadingTextOptions[DateTime.now().millisecondsSinceEpoch %
+                    loadingTextOptions.length],
                 style: GoogleFonts.ibmPlexMono(
                   fontSize: 12,
                   color: Theme.of(

@@ -116,14 +116,22 @@ class _SubmitButtonState extends State<SubmitButton> {
                     if (mode == PromptMode.submit) {
                       final String? text = await showModalBottomSheet<String>(
                         context: context,
+                        isScrollControlled: true,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(
                             top: Radius.circular(18.0),
                           ),
                         ),
                         builder:
-                            (context) =>
-                                SubmitAnswerPage(bubbleId: widget.bubbleId),
+                            (context) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.of(context).viewInsets.bottom,
+                              ),
+                              child: SubmitAnswerPage(
+                                bubbleId: widget.bubbleId,
+                              ),
+                            ),
                       );
                       if (text != null) {
                         final API api = context.read<API>();
@@ -135,14 +143,22 @@ class _SubmitButtonState extends State<SubmitButton> {
                     } else if (mode == PromptMode.choose) {
                       final String? text = await showModalBottomSheet<String>(
                         context: context,
+                        isScrollControlled: true,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(
                             top: Radius.circular(18.0),
                           ),
                         ),
                         builder:
-                            (context) =>
-                                SubmitPromptPage(bubbleId: widget.bubbleId),
+                            (context) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.of(context).viewInsets.bottom,
+                              ),
+                              child: SubmitPromptPage(
+                                bubbleId: widget.bubbleId,
+                              ),
+                            ),
                       );
                       if (text != null) {
                         final API api = context.read<API>();
@@ -166,15 +182,22 @@ class _SubmitButtonState extends State<SubmitButton> {
                                 .answer;
                         final String? text = await showModalBottomSheet<String>(
                           context: context,
+                          isScrollControlled: true,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(
                               top: Radius.circular(18.0),
                             ),
                           ),
                           builder:
-                              (context) => EditAnswerPage(
-                                bubbleId: widget.bubbleId,
-                                answer: originalText,
+                              (context) => Padding(
+                                padding: EdgeInsets.only(
+                                  bottom:
+                                      MediaQuery.of(context).viewInsets.bottom,
+                                ),
+                                child: EditAnswerPage(
+                                  bubbleId: widget.bubbleId,
+                                  answer: originalText,
+                                ),
                               ),
                         );
                         if (text != null) {
@@ -196,15 +219,22 @@ class _SubmitButtonState extends State<SubmitButton> {
                           (await api.getTodaysPrompt(widget.bubbleId)).prompt!;
                       final String? text = await showModalBottomSheet<String>(
                         context: context,
+                        isScrollControlled: true,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(
                             top: Radius.circular(18.0),
                           ),
                         ),
                         builder:
-                            (context) => EditPromptPage(
-                              bubbleId: widget.bubbleId,
-                              prompt: currentPrompt,
+                            (context) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.of(context).viewInsets.bottom,
+                              ),
+                              child: EditPromptPage(
+                                bubbleId: widget.bubbleId,
+                                prompt: currentPrompt,
+                              ),
                             ),
                       );
                       if (text != null) {

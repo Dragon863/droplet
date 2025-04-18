@@ -95,6 +95,7 @@ class _BubblesPageState extends State<BubblesPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        key: Key("createBubbleButton"),
         backgroundColor:
             Theme.of(context).colorScheme.brightness == Brightness.light
                 ? Color.fromARGB(255, 68, 48, 97)
@@ -152,9 +153,6 @@ class _BubblesPageState extends State<BubblesPage> {
         clipBehavior: Clip.antiAliasWithSaveLayer,
         isScrollControlled: true,
         isDismissible: true,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.3,
-        ),
         builder: (_) {
           return CreateBubblePage();
         },

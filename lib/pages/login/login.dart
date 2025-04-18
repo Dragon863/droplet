@@ -1,3 +1,4 @@
+import 'package:droplet/pages/policy/privacy.dart';
 import 'package:droplet/utils/api.dart';
 import 'package:droplet/utils/snackbars.dart';
 import 'package:flutter/material.dart';
@@ -129,10 +130,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _passwordController,
             ),
           ),
-          const SizedBox(height: 32),
-
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 48),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -154,8 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                         password: _passwordController.text,
                       )
                       .then((_) {
-                        // Handle successful login here
-                        Navigator.pushReplacementNamed(context, '/main');
+                        Navigator.pushReplacementNamed(context, '/');
                       })
                       .catchError((error) {
                         context.showErrorSnackbar('Login failed: $error');
@@ -191,7 +188,6 @@ class _LoginPageState extends State<LoginPage> {
                       .catchError((error) {
                         context.showErrorSnackbar('Login failed: $error');
                       });
-
                   setState(() => _isLoading = false);
                 },
                 child: const Text('Sign Up'),
@@ -199,14 +195,20 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           const Spacer(),
-          // TextButton(
-          //   child: Text(
-          //     'Forgot Password?',
-          //     style: TextStyle(color: Color(0xFF9B51E0)),
-          //   ),
-          //   onPressed: () {},
-          // ),
-          // const SizedBox(height: 24),
+          InkWell(
+            child: Text(
+              'View our Privacy Policy',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyPage(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );

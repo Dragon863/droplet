@@ -4,6 +4,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:droplet/pages/password_reset/password_reset_page.dart';
+import 'package:droplet/pages/policy/privacy.dart';
 import 'package:droplet/pages/settings/crop_pfp.dart';
 import 'package:droplet/themes/helpers.dart';
 import 'package:droplet/themes/theme_provider.dart';
@@ -459,7 +460,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const Placeholder(),
+                        builder: (context) => const PrivacyPolicyPage(),
                       ),
                     );
                   },
