@@ -1,7 +1,7 @@
 # Droplet Socials
 
 ## Description
-Droplet is a social app designed to be less addictive and more private. Every day, a member of each "Bubble" (like a group chat) writes a prompt which the other members respond to
+Droplet is a social app designed to be less addictive and more private. Every day, a member of each "Bubble" (like a group chat) writes a prompt which the other members respond to. For design, see the [figma](https://www.figma.com/design/DqvHHahNPrNtzrvJrAmjqJ/Droplet-Social-App?node-id=0-1&t=mLYKEtfcXDINPqla-1)
 
 ## Screenshots
 | | |
