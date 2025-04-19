@@ -20,15 +20,16 @@ class _LoginPageState extends State<LoginPage> {
   bool _isemailValid = true;
   bool _isPasswordValid = true;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void togglePasswordVisibility() {
     setState(() {
       _isPasswordVisible = !_isPasswordVisible;
-    });
-  }
-
-  void toggleLoading() {
-    setState(() {
-      _isLoading = !_isLoading;
     });
   }
 
@@ -36,27 +37,15 @@ class _LoginPageState extends State<LoginPage> {
     final RegExp emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
-    if (emailRegex.hasMatch(email)) {
-      setState(() {
-        _isemailValid = true;
-      });
-    } else {
-      setState(() {
-        _isemailValid = false;
-      });
-    }
+    setState(() {
+      _isemailValid = emailRegex.hasMatch(email);
+    });
   }
 
   void checkPasswordValidity(String password) {
-    if (password.length >= 8) {
-      setState(() {
-        _isPasswordValid = true;
-      });
-    } else {
-      setState(() {
-        _isPasswordValid = false;
-      });
-    }
+    setState(() {
+      _isPasswordValid = password.length >= 8;
+    });
   }
 
   @override
@@ -82,17 +71,14 @@ class _LoginPageState extends State<LoginPage> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: TextField(
               controller: _emailController,
+              onChanged: checkEmailValidity,
               decoration: InputDecoration(
                 label: const Text('Email'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12.0)),
                 ),
                 errorText: _isemailValid ? null : 'Email is invalid',
-                errorBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red),
-                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                ),
-                errorStyle: const TextStyle(color: Colors.red),
+
                 errorMaxLines: 1,
               ),
             ),
@@ -107,16 +93,13 @@ class _LoginPageState extends State<LoginPage> {
               enableInteractiveSelection: false,
               keyboardType: TextInputType.visiblePassword,
               textInputAction: TextInputAction.done,
+              onChanged: checkPasswordValidity,
               decoration: InputDecoration(
                 label: const Text('Password'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12.0)),
                 ),
                 errorText: _isPasswordValid ? null : 'Password is too short',
-                errorBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red),
-                  borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                ),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _isPasswordVisible
@@ -126,74 +109,89 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: togglePasswordVisibility,
                 ),
               ),
-
               controller: _passwordController,
             ),
           ),
           const SizedBox(height: 48),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: () {
-                  setState(() => _isLoading = true);
-                  checkEmailValidity(_emailController.text);
-                  checkPasswordValidity(_passwordController.text);
-                  if (!_isemailValid || !_isPasswordValid) {
-                    setState(() => _isLoading = false);
-                    context.showErrorSnackbar('Invalid email or password');
-                    return;
-                  }
+          if (_isLoading)
+            const CircularProgressIndicator()
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    checkEmailValidity(_emailController.text);
+                    checkPasswordValidity(_passwordController.text);
+                    if (!_isemailValid || !_isPasswordValid) {
+                      context.showErrorSnackbar('Invalid email or password');
+                      return;
+                    }
+                    setState(() => _isLoading = true);
 
-                  final API api = context.read<API>();
-                  api
-                      .createEmailSession(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      )
-                      .then((_) {
-                        Navigator.pushReplacementNamed(context, '/');
-                      })
-                      .catchError((error) {
-                        context.showErrorSnackbar('Login failed: $error');
-                      });
+                    final API api = context.read<API>();
+                    api
+                        .createEmailSession(
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                        )
+                        .then((_) {
+                          if (mounted) {
+                            Navigator.pushReplacementNamed(context, '/');
+                          }
+                        })
+                        .catchError((error) {
+                          if (mounted) {
+                            context.showErrorSnackbar('Login failed: $error');
+                          }
+                        })
+                        .whenComplete(() {
+                          if (mounted) {
+                            setState(() => _isLoading = false);
+                          }
+                        });
+                  },
+                  child: const Text('Log In'),
+                ),
+                const SizedBox(width: 8),
+                const Text(" • "),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    checkEmailValidity(_emailController.text);
+                    checkPasswordValidity(_passwordController.text);
+                    if (!_isemailValid || !_isPasswordValid) {
+                      context.showErrorSnackbar('Invalid email or password');
+                      return;
+                    }
+                    setState(() => _isLoading = true);
 
-                  setState(() => _isLoading = false);
-                },
-                child: const Text('Log In'),
-              ),
-              const SizedBox(width: 8),
-              const Text(" • "),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () {
-                  setState(() => _isLoading = true);
-                  checkEmailValidity(_emailController.text);
-                  checkPasswordValidity(_passwordController.text);
-                  if (!_isemailValid || !_isPasswordValid) {
-                    setState(() => _isLoading = false);
-                    context.showErrorSnackbar('Invalid email or password');
-                    return;
-                  }
-
-                  final API api = context.read<API>();
-                  api
-                      .createUser(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      )
-                      .then((_) {
-                        Navigator.pushReplacementNamed(context, '/');
-                      })
-                      .catchError((error) {
-                        context.showErrorSnackbar('Login failed: $error');
-                      });
-                  setState(() => _isLoading = false);
-                },
-                child: const Text('Sign Up'),
-              ),
-            ],
-          ),
+                    final API api = context.read<API>();
+                    api
+                        .createUser(
+                          email: _emailController.text,
+                          password: _passwordController.text,
+                        )
+                        .then((_) {
+                          if (mounted) {
+                            Navigator.pushReplacementNamed(context, '/');
+                          }
+                        })
+                        .catchError((error) {
+                          if (mounted) {
+                            context.showErrorSnackbar('Sign up failed: $error');
+                          }
+                        })
+                        .whenComplete(() {
+                          if (mounted) {
+                            setState(() => _isLoading = false);
+                          }
+                        });
+                  },
+                  child: const Text('Sign Up'),
+                ),
+              ],
+            ),
           const Spacer(),
           InkWell(
             child: Text(
